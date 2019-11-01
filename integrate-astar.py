@@ -46,7 +46,7 @@ sn = np.asarray(yn)
 st = np.asarray(yt)
 sc = 1e3/1e4 # scale MeV/cm => keV/um
 
-S = st*rho*sc
+S = st*rho*sc # (MeV cm2/g) * (g/cm3) * (scale) => (keV/um)
 
 pl.figure(8);pl.clf()
 pl.plot(ea,se*rho*sc,'bo-',markersize=3,markerfacecolor='w')
@@ -82,25 +82,30 @@ x = np.arange(dx,1000,dx)
 # starting conditions:
 indx = (np.where([(ea>5000) & (ea<6000)])[1][0])
 print('alpha Ei = %d'%ea[indx])
-this_E = []; this_E.append(ea[indx]) # 5500 keV
-this_S = []; this_S.append(S[indx])
+thisE = []; thisE.append(ea[indx]) # 5500 keV
+thisS = []; thisS.append(S[indx]) # keV/um
+thisT = []; thisT.append(0) # thickness
 
-for step in range(0,5000):
-	if this_E[step]<0:
+for step in range(0,5000): # step in loop-land, not physical thickness dx
+	if thisE[step]<0:
 		break
-	kev_lost = this_S[step] * dx
-	this_E.append(this_E[step] - kev_lost)
-	this_S.append( np.interp(this_E[step],ea,S) )
-	print('step %d foil thickness %2.1f um alpha %4.1f keV'%(step,dx*step,this_E[step]))
+	kev_lost = thisS[step] * dx #
+	thisE.append(thisE[step] - kev_lost) # actual energy loss this step
+	thisS.append( np.interp(thisE[step],ea[0:indx],S[0:indx]) ) # interpolated energy loss curve keV/um
+	thisT.append(dx+step*dx)
+	print('step %d foil thickness %2.1f um alpha %4.1f keV'%(step,dx*step,thisE[step]))
 print('need %1.1f um to kill the alpha in %s'%(step*dx,wha))
 # shows I need about 10 um to kill a 5.5 MeV alpha in gold
 # or about 19 mg/cm2
 
 if 1:
 	pl.figure(9);pl.clf()
-	pl.plot(this_E,'ko')
-	pl.plot(this_S,'k*')
+	pl.plot(thisT,thisE,'k-',label='alpha energy / keV')
+	pl.plot(thisT,thisS,'k--',label='keV/um')
 	pl.title('alpha through %s'%wha)
-	pl.xlabel('steps (dx=%1.2f um)'%dx)
+	pl.xlabel('thickness traversed (dx=%1.2f um) / um'%dx)
+	pl.ylabel('see legend')
+	pl.minorticks_on()
+	pl.legend()
 	pl.show()
 
